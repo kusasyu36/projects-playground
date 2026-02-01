@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects Visualizer - Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-card .label {
+            color: #888;
+            margin-top: 5px;
+        }
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .view-toggle button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #e0e0e0;
+            padding: 10px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        .view-toggle button:hover, .view-toggle button.active {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            border-color: transparent;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* カテゴリビュー */
+        .category-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .category {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,217,255,0.2);
+        }
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .category-icon {
+            font-size: 1.5rem;
+        }
+        .category-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .category-count {
+            margin-left: auto;
+            background: rgba(0,217,255,0.2);
+            color: #00d9ff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .project-item:hover {
+            background: rgba(0,217,255,0.1);
+            transform: translateX(5px);
+        }
+        .project-item.selected {
+            background: rgba(0,255,136,0.15);
+            border-left: 3px solid #00ff88;
+        }
+        .project-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d9ff;
+        }
+        .project-name {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        /* バブルビュー */
+        .bubble-view {
+            display: none;
+            position: relative;
+            height: 600px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+            padding: 10px;
+            word-break: break-word;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .bubble:hover {
+            transform: scale(1.1);
+            z-index: 100;
+        }
+
+        /* タイムラインビュー */
+        .timeline-view {
+            display: none;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #00d9ff, #00ff88);
+        }
+        .timeline-item {
+            position: relative;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-left: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00d9ff;
+            border: 3px solid #1a1a2e;
+        }
+        .timeline-date {
+            font-size: 0.85rem;
+            color: #00d9ff;
+            margin-bottom: 5px;
+        }
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .timeline-desc {
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* 詳細パネル */
+        .detail-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(26,26,46,0.98);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 30px;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .detail-panel.open {
+            right: 0;
+        }
+        .detail-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .detail-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-right: 40px;
+        }
+        .detail-section {
+            margin-bottom: 20px;
+        }
+        .detail-section h3 {
+            font-size: 0.9rem;
+            color: #00d9ff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .detail-section p {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        /* コメント機能 */
+        .comment-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .comment-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .comment-input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        .comment-btn {
+            margin-top: 10px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            color: #1a1a2e;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .comments-list {
+            margin-top: 20px;
+        }
+        .comment {
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            color: #ccc;
+        }
+        .comment-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 出力パネル */
+        .output-panel {
+            margin-top: 40px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .output-panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #00ff88;
+        }
+        .output-content {
+            background: #0d0d0d;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            color: #00ff88;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            background: rgba(0,255,136,0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: #00ff88;
+            color: #1a1a2e;
+        }
+
+        /* スクロールバー */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,217,255,0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗂️ Projects Visualizer</h1>
+        <p>/Users/s-kusaba/projects の構造をインタラクティブに探索</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="number" id="total-projects">0</div>
+            <div class="label">プロジェクト数</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="total-categories">0</div>
+            <div class="label">カテゴリ</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="comments-count">0</div>
+            <div class="label">コメント</div>
+        </div>
+    </div>
+
+    <div class="view-toggle">
+        <button class="active" onclick="showView('category')">📁 カテゴリ</button>
+        <button onclick="showView('bubble')">🔮 バブル</button>
+        <button onclick="showView('timeline')">📅 タイムライン</button>
+    </div>
+
+    <div class="container">
+        <div class="category-view" id="category-view"></div>
+        <div class="bubble-view" id="bubble-view"></div>
+        <div class="timeline-view" id="timeline-view"></div>
+
+        <div class="output-panel">
+            <h2>📤 Claude Code へのプロンプト出力</h2>
+            <div class="output-content" id="output-content">// 選択したプロジェクトやコメントがここに表示されます</div>
+            <button class="copy-btn" onclick="copyOutput()">📋 クリップボードにコピー</button>
+        </div>
+    </div>
+
+    <div class="detail-panel" id="detail-panel">
+        <button class="detail-close" onclick="closeDetail()">×</button>
+        <h2 class="detail-title" id="detail-title">プロジェクト名</h2>
+        <div class="detail-section">
+            <h3>カテゴリ</h3>
+            <p id="detail-category">-</p>
+        </div>
+        <div class="detail-section">
+            <h3>パス</h3>
+            <p id="detail-path">-</p>
+        </div>
+        <div class="detail-section">
+            <h3>説明</h3>
+            <p id="detail-desc">-</p>
+        </div>
+        <div class="comment-section">
+            <h3>💬 コメント・質問を追加</h3>
+            <textarea class="comment-input" id="comment-input" placeholder="このプロジェクトについて質問や編集リクエストを入力..."></textarea>
+            <button class="comment-btn" onclick="addComment()">コメントを追加</button>
+            <div class="comments-list" id="comments-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // プロジェクトデータ
+        const projects = {
+            "📚 共有リソース": {
+                color: "#9b59b6",
+                items: ["_docs", "_guides", "_resources", "_scripts"]
+            },
+            "🤖 Claude関連": {
+                color: "#00d9ff",
+                items: ["claude-dashboard", "claude-skills-collection", "claude-code-guide-course", ".claude", ".claude-hub"]
+            },
+            "🧠 AI/ML プロジェクト": {
+                color: "#e74c3c",
+                items: ["ai-micro-apps", "ai-scientist", "agi-cockpit", "agi-cockpit-temp", "multi-agent-shogun", "multi-agent-workflow", "pathology-ai-scientist", "Vision_Language"]
+            },
+            "🔧 自動生成アプリ": {
+                color: "#f39c12",
+                items: Array.from({length: 41}, (_, i) => `auto-app${i + 1}`).concat(["auto-app2-2"])
+            },
+            "🎮 ゲーム・クリエイティブ": {
+                color: "#2ecc71",
+                items: ["furusato-board-game", "coding-factorio"]
+            },
+            "📊 研究・分析": {
+                color: "#3498db",
+                items: ["edison-research", "inference-speed", "singularity-lab", "hypothesis-lab"]
+            },
+            "🏢 ビジネス系": {
+                color: "#1abc9c",
+                items: ["AI駆動開発研修", "AI駆動開発支援", "seo-article-generator", "kankeijinko-service", "fde-leverage-suite"]
+            },
+            "🌐 Webサービス": {
+                color: "#e91e63",
+                items: ["beautiful-hp", "new_experience", "pan", "keiryo", "keiryo-md", "keiryo-pic", "localMoltBook"]
+            },
+            "🌱 その他": {
+                color: "#607d8b",
+                items: ["automation-project", "innovative-product", "physical-ai-wellness", "植物療法プロジェクト", "skills-mastery", "task-learning"]
+            }
+        };
+
+        const comments = {};
+        let selectedProject = null;
+
+        // 初期化
+        function init() {
+            renderCategoryView();
+            renderBubbleView();
+            renderTimelineView();
+            updateStats();
+        }
+
+        // 統計更新
+        function updateStats() {
+            let total = 0;
+            Object.values(projects).forEach(cat => total += cat.items.length);
+            document.getElementById('total-projects').textContent = total;
+            document.getElementById('total-categories').textContent = Object.keys(projects).length;
+            document.getElementById('comments-count').textContent = Object.keys(comments).length;
+        }
+
+        // カテゴリビュー
+        function renderCategoryView() {
+            const container = document.getElementById('category-view');
+            container.innerHTML = '';
+
+            Object.entries(projects).forEach(([category, data]) => {
+                const categoryEl = document.createElement('div');
+                categoryEl.className = 'category';
+                categoryEl.innerHTML = `
+                    <div class="category-header">
+                        <span class="category-icon">${category.split(' ')[0]}</span>
+                        <span class="category-title">${category.split(' ').slice(1).join(' ')}</span>
+                        <span class="category-count">${data.items.length}</span>
+                    </div>
+                    <div class="project-list">
+                        ${data.items.map(item => `
+                            <div class="project-item ${comments[item] ? 'selected' : ''}" onclick="openDetail('${item}', '${category}', '${data.color}')">
+                                <div class="project-dot" style="background: ${data.color}"></div>
+                                <span class="project-name">${item}</span>
+                                ${comments[item] ? '💬' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(categoryEl);
+            });
+        }
+
+        // バブルビュー
+        function renderBubbleView() {
+            const container = document.getElementById('bubble-view');
+            container.innerHTML = '';
+
+            const width = container.offsetWidth || 1200;
+            const height = 600;
+
+            Object.entries(projects).forEach(([category, data], catIndex) => {
+                const baseX = (catIndex % 3) * (width / 3) + 100;
+                const baseY = Math.floor(catIndex / 3) * 200 + 100;
+
+                data.items.slice(0, 8).forEach((item, i) => {
+                    const bubble = document.createElement('div');
+                    const size = 60 + Math.random() * 40;
+                    bubble.className = 'bubble';
+                    bubble.style.cssText = `
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${baseX + (i % 4) * 80 + Math.random() * 30}px;
+                        top: ${baseY + Math.floor(i / 4) * 80 + Math.random() * 30}px;
+                        background: ${data.color}40;
+                        border: 2px solid ${data.color};
+                        color: ${data.color};
+                    `;
+                    bubble.textContent = item.substring(0, 10);
+                    bubble.onclick = () => openDetail(item, category, data.color);
+                    container.appendChild(bubble);
+                });
+            });
+        }
+
+        // タイムラインビュー
+        function renderTimelineView() {
+            const container = document.getElementById('timeline-view');
+            const recentProjects = [
+                { name: "keiryo-md", date: "2月1日", desc: "最新の更新" },
+                { name: "furusato-board-game", date: "2月1日", desc: "ボードゲーム開発" },
+                { name: "claude-dashboard", date: "2月1日", desc: "Claude連携" },
+                { name: "ai-micro-apps", date: "1月31日", desc: "AIマイクロアプリ集" },
+                { name: "singularity-lab", date: "1月31日", desc: "研究プロジェクト" },
+                { name: "beautiful-hp", date: "1月29日", desc: "Webサイト" },
+            ];
+
+            container.innerHTML = `
+                <div class="timeline">
+                    ${recentProjects.map(p => `
+                        <div class="timeline-item" onclick="openDetail('${p.name}', '', '#00d9ff')">
+                            <div class="timeline-date">${p.date}</div>
+                            <div class="timeline-title">${p.name}</div>
+                            <div class="timeline-desc">${p.desc}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // ビュー切り替え
+        function showView(view) {
+            document.querySelectorAll('.view-toggle button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('category-view').style.display = view === 'category' ? 'grid' : 'none';
+            document.getElementById('bubble-view').style.display = view === 'bubble' ? 'block' : 'none';
+            document.getElementById('timeline-view').style.display = view === 'timeline' ? 'block' : 'none';
+
+            if (view === 'bubble') {
+                renderBubbleView();
+            }
+        }
+
+        // 詳細パネル
+        function openDetail(name, category, color) {
+            selectedProject = name;
+            document.getElementById('detail-title').textContent = name;
+            document.getElementById('detail-title').style.color = color;
+            document.getElementById('detail-category').textContent = category || '不明';
+            document.getElementById('detail-path').textContent = `/Users/s-kusaba/projects/${name}`;
+            document.getElementById('detail-desc').textContent = getProjectDescription(name);
+            document.getElementById('detail-panel').classList.add('open');
+
+            renderComments();
+            updateOutput();
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-panel').classList.remove('open');
+        }
+
+        function getProjectDescription(name) {
+            const descriptions = {
+                "claude-dashboard": "Claude関連のダッシュボード",
+                "claude-skills-collection": "Claudeスキルのコレクション",
+                "ai-micro-apps": "AIを活用したマイクロアプリ集",
+                "furusato-board-game": "ふるさとをテーマにしたボードゲーム",
+                "multi-agent-shogun": "マルチエージェントシステム",
+                "keiryo": "計量関連プロジェクト",
+            };
+            return descriptions[name] || "プロジェクトの詳細はフォルダを確認してください";
+        }
+
+        // コメント機能
+        function addComment() {
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
+            if (!text || !selectedProject) return;
+
+            if (!comments[selectedProject]) {
+                comments[selectedProject] = [];
+            }
+            comments[selectedProject].push({
+                text: text,
+                time: new Date().toLocaleString('ja-JP')
+            });
+
+            input.value = '';
+            renderComments();
+            renderCategoryView();
+            updateStats();
+            updateOutput();
+        }
+
+        function renderComments() {
+            const container = document.getElementById('comments-list');
+            const projectComments = comments[selectedProject] || [];
+
+            container.innerHTML = projectComments.map(c => `
+                <div class="comment">
+                    <div class="comment-text">${c.text}</div>
+                    <div class="comment-time">${c.time}</div>
+                </div>
+            `).join('');
+        }
+
+        // 出力生成
+        function updateOutput() {
+            const output = generatePrompt();
+            document.getElementById('output-content').textContent = output;
+        }
+
+        function generatePrompt() {
+            let prompt = `# Projects フォルダの構造分析\n\n`;
+            prompt += `選択中: ${selectedProject || 'なし'}\n`;
+            prompt += `パス: /Users/s-kusaba/projects/${selectedProject || ''}\n\n`;
+
+            if (Object.keys(comments).length > 0) {
+                prompt += `## ユーザーからのコメント・質問\n\n`;
+                Object.entries(comments).forEach(([project, cmts]) => {
+                    prompt += `### ${project}\n`;
+                    cmts.forEach(c => {
+                        prompt += `- ${c.text}\n`;
+                    });
+                    prompt += '\n';
+                });
+            }
+
+            prompt += `\n上記の内容に基づいて対応してください。`;
+            return prompt;
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output-content').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ コピーしました！';
+                setTimeout(() => btn.textContent = '📋 クリップボードにコピー', 2000);
+            });
+        }
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>
